@@ -11,10 +11,10 @@ and Quetta
 
 The project focuses on three prediction tasks:
 
-Temperature Prediction (Regression)
+•	Temperature Prediction (Regression)
 
-Rain Prediction (Binary Classification)
+•	Rain Prediction (Binary Classification)
 
-Weather Condition Prediction (Multi-Class Classification)
+•	Weather Condition Prediction (Multi-Class Classification)
 
 In addition, an interactive dashboard was developed to visualize weather trends and generate real-time predictions.
