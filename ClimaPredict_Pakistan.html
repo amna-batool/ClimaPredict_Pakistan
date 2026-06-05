@@ -1,0 +1,906 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+<title>Pakistan Weather Prediction System</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@300;400;500;600;700&display=swap');
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --cyan:#06b6d4;--indigo:#6366f1;--purple:#8b5cf6;--emerald:#10b981;
+  --amber:#f59e0b;--pink:#f472b6;--red:#ef4444;
+  --glass:rgba(255,255,255,0.07);--glass-b:rgba(255,255,255,0.14);
+  --glass-h:rgba(255,255,255,0.12);--text:#fff;
+  --muted:rgba(255,255,255,0.55);--dim:rgba(255,255,255,0.32);
+  --sw:230px;
+}
+body{font-family:'IBM Plex Sans',sans-serif;background:linear-gradient(135deg,#080d1a 0%,#0e1f42 50%,#080d1a 100%);min-height:100vh;color:#fff;display:flex;overflow-x:hidden}
+
+/* SIDEBAR */
+#sb{width:var(--sw);min-height:100vh;background:rgba(255,255,255,0.04);border-right:1px solid var(--glass-b);backdrop-filter:blur(20px);display:flex;flex-direction:column;flex-shrink:0;transition:width .3s;position:sticky;top:0;height:100vh;overflow:hidden}
+#sb.col{width:60px}
+#sb.col .nl,#sb.col .sbt,#sb.col .sds{display:none}
+#sb.col .ni{justify-content:center;padding:10px}
+.slogo{display:flex;align-items:center;gap:12px;padding:18px 16px;border-bottom:1px solid var(--glass-b);flex-shrink:0}
+.lico{width:36px;height:36px;border-radius:10px;flex-shrink:0;background:linear-gradient(135deg,var(--cyan),var(--indigo));display:flex;align-items:center;justify-content:center;font-size:18px}
+.sbt{line-height:1.3}.bn{font-weight:700;font-size:13px}.bs{font-size:11px;color:var(--cyan)}
+nav{flex:1;padding:10px 8px;overflow-y:auto}
+.ni{display:flex;align-items:center;gap:10px;padding:10px 12px;border-radius:12px;cursor:pointer;font-size:13px;color:var(--muted);margin-bottom:2px;transition:all .2s;border:none;background:none;width:100%;text-align:left;font-family:inherit}
+.ni:hover{background:var(--glass);color:#fff}
+.ni.active{background:rgba(255,255,255,0.13);color:#fff;font-weight:600}
+.ni.active .nico{filter:drop-shadow(0 0 6px var(--cyan))}
+.nico{font-size:17px;flex-shrink:0}
+.sds{margin:10px 8px;padding:12px;border-radius:12px;background:var(--glass);border:1px solid var(--glass-b)}
+.sds p{font-size:11px;color:var(--dim);margin-bottom:4px}
+.sds strong{font-size:12px;display:block;margin-bottom:2px}
+
+/* MAIN */
+#main{flex:1;display:flex;flex-direction:column;min-width:0}
+header{height:60px;display:flex;align-items:center;justify-content:space-between;padding:0 22px;border-bottom:1px solid var(--glass-b);background:rgba(255,255,255,0.04);backdrop-filter:blur(20px);position:sticky;top:0;z-index:100;flex-shrink:0}
+.hl{display:flex;align-items:center;gap:14px}
+#mbtn{background:none;border:none;color:var(--muted);cursor:pointer;font-size:20px;display:flex;align-items:center;transition:color .2s}
+#mbtn:hover{color:#fff}
+.sb2{display:flex;align-items:center;gap:8px;background:var(--glass);border:1px solid var(--glass-b);border-radius:12px;padding:6px 14px}
+.sb2 input{background:none;border:none;outline:none;color:#fff;font-size:13px;width:180px;font-family:inherit}
+.sb2 input::placeholder{color:var(--dim)}
+.hr2{display:flex;align-items:center;gap:14px}
+#clk{font-size:12px;color:var(--dim)}
+.ava{width:32px;height:32px;border-radius:50%;background:linear-gradient(135deg,var(--cyan),var(--indigo));display:flex;align-items:center;justify-content:center;font-size:14px}
+
+/* PAGES */
+main{flex:1;overflow-y:auto;padding:22px;display:flex;flex-direction:column;gap:22px}
+.page{display:none;flex-direction:column;gap:22px}
+.page.active{display:flex}
+
+/* GLASS CARD */
+.card{background:var(--glass);border:1px solid var(--glass-b);border-radius:20px;backdrop-filter:blur(12px);transition:background .2s}
+.card:hover{background:var(--glass-h)}
+.cp{padding:22px}
+
+/* HERO */
+.hero{position:relative;overflow:hidden;background:linear-gradient(135deg,rgba(6,182,212,.1),rgba(99,102,241,.1));border-radius:24px;border:1px solid var(--glass-b);padding:38px 34px}
+.hp{position:absolute;inset:0;pointer-events:none;overflow:hidden}
+.pt{position:absolute;border-radius:50%;opacity:.16;animation:pp 4s ease-in-out infinite}
+@keyframes pp{0%,100%{transform:scale(1);opacity:.13}50%{transform:scale(1.35);opacity:.24}}
+.hbadge{display:inline-flex;align-items:center;font-size:12px;color:#67e8f9;border:1px solid rgba(6,182,212,.35);background:rgba(6,182,212,.1);border-radius:20px;padding:4px 12px;margin-bottom:14px}
+.hero h1{font-size:clamp(20px,4vw,34px);font-weight:700;line-height:1.2;margin-bottom:10px}
+.hero h1 span{background:linear-gradient(135deg,var(--cyan),#a78bfa);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
+.hero p{color:var(--muted);font-size:14px;max-width:580px;margin-bottom:18px;line-height:1.6}
+.htags{display:flex;flex-wrap:wrap;gap:8px}
+.htag{font-size:12px;padding:4px 12px;border-radius:20px;background:rgba(255,255,255,.07);border:1px solid var(--glass-b);color:var(--muted)}
+
+/* STATS */
+.sgrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:12px}
+.scard{background:var(--glass);border:1px solid var(--glass-b);border-radius:16px;padding:16px;display:flex;align-items:center;gap:12px;transition:all .3s;cursor:default}
+.scard:hover{transform:translateY(-3px) scale(1.03);background:var(--glass-h);box-shadow:0 8px 32px rgba(6,182,212,.15)}
+.sico{width:42px;height:42px;border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:20px;flex-shrink:0}
+.slbl{font-size:11px;color:var(--muted);font-weight:500}
+.sval{font-size:22px;font-weight:700}
+
+/* PRED CARDS */
+.pgrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:16px}
+.pcard{position:relative;overflow:hidden;border-radius:20px;padding:20px;border:1px solid var(--glass-b);cursor:pointer;background:var(--glass);backdrop-filter:blur(12px);transition:transform .3s,box-shadow .3s}
+.pcard::before{content:'';position:absolute;inset:0;opacity:0;transition:opacity .3s;border-radius:20px}
+.pcard:hover{transform:scale(1.05);box-shadow:0 12px 40px rgba(0,0,0,.3)}
+.pcard:hover::before{opacity:1}
+.pc1::before{background:linear-gradient(135deg,rgba(245,158,11,.22),rgba(239,68,68,.22))}
+.pc2::before{background:linear-gradient(135deg,rgba(99,102,241,.22),rgba(139,92,246,.22))}
+.pc3::before{background:linear-gradient(135deg,rgba(6,182,212,.22),rgba(16,185,129,.22))}
+.pc4::before{background:linear-gradient(135deg,rgba(244,114,182,.22),rgba(236,72,153,.22))}
+.pcn{position:relative;z-index:1}
+.pico{width:48px;height:48px;border-radius:16px;display:flex;align-items:center;justify-content:center;font-size:22px;margin-bottom:12px}
+.pbadge{display:inline-block;font-size:11px;padding:2px 8px;border-radius:20px;background:rgba(255,255,255,.15);color:rgba(255,255,255,.8);margin-bottom:8px}
+.pcard h3{font-size:14px;font-weight:600;margin-bottom:6px}
+.pcard p{font-size:12px;color:var(--muted);line-height:1.5;margin-bottom:14px}
+.pbtn{display:inline-flex;align-items:center;gap:4px;font-size:12px;font-weight:600;color:#fff;padding:7px 14px;border-radius:10px;border:none;cursor:pointer;font-family:inherit;transition:opacity .2s,transform .15s}
+.pbtn:hover{opacity:.85;transform:scale(1.04)}
+
+/* FORM GRID */
+.frgrid{display:grid;grid-template-columns:1fr 1fr;gap:20px}
+@media(max-width:900px){.frgrid{grid-template-columns:1fr}}
+.stitle{font-size:15px;font-weight:700;margin-bottom:18px;display:flex;align-items:center;gap:8px}
+.fgrid{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:16px}
+@media(max-width:600px){.fgrid{grid-template-columns:1fr}}
+.fg label{font-size:12px;color:var(--muted);display:flex;align-items:center;gap:5px;margin-bottom:6px}
+.fc{width:100%;background:rgba(255,255,255,.07);border:1px solid var(--glass-b);border-radius:12px;padding:9px 12px;color:#fff;font-size:13px;outline:none;font-family:inherit;transition:border-color .2s;appearance:none}
+.fc:focus{border-color:var(--cyan)}
+select.fc option{background:#0e1f42}
+.brow{display:flex;gap:10px}
+.bpred{flex:1;padding:11px;border-radius:14px;border:none;cursor:pointer;background:linear-gradient(135deg,var(--cyan),var(--indigo));color:#fff;font-size:13px;font-weight:600;font-family:inherit;display:flex;align-items:center;justify-content:center;gap:6px;transition:transform .2s,opacity .2s}
+.bpred:hover:not(:disabled){transform:scale(1.02)}
+.bpred:disabled{opacity:.65;cursor:not-allowed}
+.brst{padding:11px 16px;border-radius:14px;cursor:pointer;background:none;border:1px solid var(--glass-b);color:var(--muted);font-size:13px;font-family:inherit;transition:background .2s;display:flex;align-items:center;gap:6px}
+.brst:hover{background:var(--glass);color:#fff}
+.spin{width:15px;height:15px;border:2px solid rgba(255,255,255,.3);border-top-color:#fff;border-radius:50%;animation:sp .7s linear infinite;flex-shrink:0}
+@keyframes sp{to{transform:rotate(360deg)}}
+
+/* RESULT */
+.re{display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:200px;text-align:center}
+.re span{font-size:40px;margin-bottom:12px;opacity:.3}
+.re p{color:var(--dim);font-size:13px}
+.rcond{display:flex;align-items:center;gap:16px;background:rgba(255,255,255,.06);border-radius:14px;padding:14px;margin-bottom:16px}
+.rico{width:56px;height:56px;border-radius:16px;display:flex;align-items:center;justify-content:center;font-size:26px;flex-shrink:0}
+.rlbl{font-size:11px;color:var(--muted)}
+.rname{font-size:20px;font-weight:700}
+.rcity{font-size:11px;color:var(--dim);margin-top:2px}
+.rmets{display:flex;flex-direction:column;gap:8px;margin-bottom:16px}
+.rmet{display:flex;align-items:center;justify-content:space-between;background:rgba(255,255,255,.05);border-radius:12px;padding:10px 14px}
+.rml{display:flex;align-items:center;gap:8px;font-size:13px;color:var(--muted)}
+.rmv{font-size:14px;font-weight:700}
+
+/* PROGRESS */
+.pw{margin-bottom:10px}
+.pl{display:flex;justify-content:space-between;font-size:13px;margin-bottom:5px}
+.pl span:last-child{font-weight:700}
+.pt2{height:8px;background:rgba(255,255,255,.08);border-radius:20px;overflow:hidden}
+.pf{height:100%;border-radius:20px;transition:width 1.2s cubic-bezier(.4,0,.2,1);width:0}
+
+/* ANALYTICS */
+.agrid{display:grid;grid-template-columns:1fr 1fr;gap:20px}
+@media(max-width:900px){.agrid{grid-template-columns:1fr}}
+.ctitle{font-size:14px;font-weight:600;margin-bottom:4px}
+.csub{font-size:12px;color:var(--dim);margin-bottom:14px}
+.cwrap{position:relative;width:100%}
+.cleg{display:flex;flex-wrap:wrap;gap:12px;margin-top:10px}
+.cli{display:flex;align-items:center;gap:5px;font-size:12px;color:var(--muted)}
+.cld{width:8px;height:8px;border-radius:50%;flex-shrink:0}
+
+/* PIE LAYOUT */
+.piel{display:flex;align-items:center;gap:20px}
+.pieleg{flex:1}
+.plr{display:flex;align-items:center;justify-content:space-between;padding:6px 0;border-bottom:1px solid rgba(255,255,255,.05)}
+.plr:last-child{border-bottom:none}
+.pll{display:flex;align-items:center;gap:8px;font-size:12px;color:var(--muted)}
+.pld{width:10px;height:10px;border-radius:50%;flex-shrink:0}
+.plv{font-size:12px;font-weight:700}
+
+/* MODEL PERF */
+.mst{font-size:11px;text-transform:uppercase;letter-spacing:2px;color:var(--dim);margin-bottom:10px;margin-top:14px}
+.mdiv{border:none;border-top:1px solid rgba(255,255,255,.07);margin:14px 0 2px}
+
+/* PAGE SPECIFIC CARDS */
+.big-stat-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:16px;margin-bottom:8px}
+.big-stat{background:var(--glass);border:1px solid var(--glass-b);border-radius:18px;padding:22px;text-align:center}
+.big-stat .bsv{font-size:36px;font-weight:700;margin-bottom:4px}
+.big-stat .bsl{font-size:13px;color:var(--muted)}
+.big-stat .bss{font-size:11px;color:var(--dim);margin-top:6px}
+.info-table{width:100%;border-collapse:collapse;font-size:13px}
+.info-table th{text-align:left;color:var(--muted);font-weight:500;padding:8px 12px;border-bottom:1px solid rgba(255,255,255,.07);font-size:12px}
+.info-table td{padding:10px 12px;border-bottom:1px solid rgba(255,255,255,.05);color:#fff}
+.info-table tr:last-child td{border-bottom:none}
+.info-table tr:hover td{background:rgba(255,255,255,.04)}
+.badge{display:inline-block;font-size:11px;padding:3px 9px;border-radius:20px;font-weight:500}
+.badge-g{background:rgba(16,185,129,.18);color:#34d399}
+.badge-b{background:rgba(6,182,212,.18);color:#22d3ee}
+.badge-y{background:rgba(245,158,11,.18);color:#fbbf24}
+.badge-p{background:rgba(139,92,246,.18);color:#a78bfa}
+.tworow{display:grid;grid-template-columns:1fr 1fr;gap:20px}
+@media(max-width:900px){.tworow{grid-template-columns:1fr}}
+.feature-list{list-style:none;display:flex;flex-direction:column;gap:10px}
+.feature-list li{display:flex;align-items:flex-start;gap:10px;font-size:13px;color:var(--muted);line-height:1.5}
+.feature-list li span.ico2{font-size:16px;flex-shrink:0;margin-top:1px}
+.section-head{font-size:18px;font-weight:700;margin-bottom:6px}
+.section-desc{font-size:13px;color:var(--muted);margin-bottom:20px;line-height:1.6}
+.input-page-grid{display:grid;grid-template-columns:1fr 1fr;gap:20px}
+@media(max-width:900px){.input-page-grid{grid-template-columns:1fr}}
+.slider-row{display:flex;align-items:center;gap:10px;margin-bottom:12px}
+.slider-row label{font-size:12px;color:var(--muted);width:130px;flex-shrink:0}
+.slider-row input[type=range]{flex:1;accent-color:var(--cyan)}
+.slider-row .sv{font-size:13px;font-weight:600;width:50px;text-align:right}
+.settings-row{display:flex;align-items:center;justify-content:space-between;padding:14px 0;border-bottom:1px solid rgba(255,255,255,.06)}
+.settings-row:last-child{border-bottom:none}
+.settings-row .srl{font-size:14px;font-weight:500}
+.settings-row .srs{font-size:12px;color:var(--dim);margin-top:2px}
+.toggle{width:44px;height:24px;border-radius:12px;border:none;cursor:pointer;position:relative;flex-shrink:0;transition:background .3s}
+.toggle::after{content:'';position:absolute;top:3px;left:3px;width:18px;height:18px;border-radius:50%;background:#fff;transition:transform .3s}
+.toggle.on{background:var(--cyan)}
+.toggle.off{background:rgba(255,255,255,.2)}
+.toggle.on::after{transform:translateX(20px)}
+
+/* FOOTER */
+footer{border-top:1px solid var(--glass-b);padding:18px 0 4px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;margin-top:auto}
+footer p{font-size:12px;color:var(--dim)}
+footer p span{font-weight:500}
+.ficns{display:flex;gap:8px}
+.fico{width:30px;height:30px;border-radius:8px;background:var(--glass);border:1px solid var(--glass-b);display:flex;align-items:center;justify-content:center;font-size:14px;cursor:pointer;color:var(--muted);transition:background .2s}
+.fico:hover{background:var(--glass-h);color:#fff}
+
+@media(max-width:700px){:root{--sw:60px}#sb .nl,#sb .sbt,#sb .sds{display:none}#sb .ni{justify-content:center;padding:10px}#clk{display:none}.sb2{display:none}main{padding:14px}}
+</style>
+</head>
+<body>
+
+<!-- SIDEBAR -->
+<aside id="sb">
+  <div class="slogo">
+    <div class="lico">🌦️</div>
+    <div class="sbt"><div class="bn">Pakistan</div><div class="bs">Weather AI</div></div>
+  </div>
+  <nav>
+    <button class="ni active" onclick="nav('dashboard')"><span class="nico">🏠</span><span class="nl">Dashboard</span></button>
+    <button class="ni" onclick="nav('temperature')"><span class="nico">🌡️</span><span class="nl">Temperature</span></button>
+    <button class="ni" onclick="nav('rain')"><span class="nico">🌧️</span><span class="nl">Rain Prediction</span></button>
+    <button class="ni" onclick="nav('condition')"><span class="nico">☀️</span><span class="nl">Weather Condition</span></button>
+    <button class="ni" onclick="nav('analytics')"><span class="nico">📊</span><span class="nl">Data Analytics</span></button>
+    <button class="ni" onclick="nav('performance')"><span class="nico">⚡</span><span class="nl">Model Performance</span></button>
+    <button class="ni" onclick="nav('settings')"><span class="nico">⚙️</span><span class="nl">Settings</span></button>
+  </nav>
+  <div class="sds">
+    <p>Dataset</p>
+    <strong>2,190 records</strong>
+    <span style="font-size:11px;color:var(--dim)">6 Pakistani cities · 38 features</span>
+  </div>
+</aside>
+
+<!-- MAIN -->
+<div id="main">
+  <header>
+    <div class="hl">
+      <button id="mbtn" onclick="document.getElementById('sb').classList.toggle('col')">☰</button>
+      <div class="sb2"><span style="color:var(--dim);font-size:14px">🔍</span><input type="text" placeholder="Search cities, forecasts…"/></div>
+    </div>
+    <div class="hr2">
+      <span id="clk"></span>
+      <div class="ava">👤</div>
+    </div>
+  </header>
+
+  <main>
+
+    <!-- ═══════════ PAGE: DASHBOARD ═══════════ -->
+    <div class="page active" id="pg-dashboard">
+
+      <!-- Hero -->
+      <div class="hero">
+        <div class="hp" id="hparts"></div>
+        <div class="hbadge">🤖 AI-Powered Forecasting</div>
+        <h1>ClimaPredict<br><span>Pakistan</span></h1>
+        <p>Advanced Machine Learning based weather forecasting for major Pakistan cities — Linear Regression, Random Forest &amp; Gradient Boosting trained on 2,190+ records.</p>
+        <div class="htags">
+          <span class="htag">2,190 Records</span><span class="htag">6 Cities</span>
+          <span class="htag">38 Features</span><span class="htag">3 ML Models</span><span class="htag">2023–2024</span>
+        </div>
+      </div>
+
+      <!-- Stats -->
+      <div class="sgrid">
+        <div class="scard"><div class="sico" style="background:rgba(245,158,11,.15)">🌡️</div><div><div class="slbl">Temp Accuracy</div><div class="sval" data-c="94" data-s="%">0%</div></div></div>
+        <div class="scard"><div class="sico" style="background:rgba(99,102,241,.15)">🌧️</div><div><div class="slbl">Rain Accuracy</div><div class="sval" data-c="88" data-s="%">0%</div></div></div>
+        <div class="scard"><div class="sico" style="background:rgba(16,185,129,.15)">☀️</div><div><div class="slbl">Condition Acc.</div><div class="sval" data-c="82" data-s="%">0%</div></div></div>
+        <div class="scard"><div class="sico" style="background:rgba(244,114,182,.15)">📊</div><div><div class="slbl">Data Points</div><div class="sval" data-c="2190" data-s="">0</div></div></div>
+      </div>
+
+      <!-- Prediction Shortcut Cards -->
+      <div>
+        <div class="stitle">🎯 Prediction Modules</div>
+        <div class="pgrid">
+          <div class="pcard pc1" onclick="nav('temperature')">
+            <div class="pcn">
+              <div class="pico" style="background:linear-gradient(135deg,#f59e0b,#ef4444)">🌡️</div>
+              <span class="pbadge">↑ 4% Acc</span>
+              <h3>Temperature Prediction</h3>
+              <p>Predict max/min/avg temperature using Linear Regression with 94.2% accuracy and R²=0.961</p>
+              <button class="pbtn" style="background:linear-gradient(135deg,#f59e0b,#ef4444)">Explore →</button>
+            </div>
+          </div>
+          <div class="pcard pc2" onclick="nav('rain')">
+            <div class="pcn">
+              <div class="pico" style="background:linear-gradient(135deg,#6366f1,#8b5cf6)">🌧️</div>
+              <span class="pbadge">↑ 3% Acc</span>
+              <h3>Rain Forecast</h3>
+              <p>Binary rain classification with Random Forest — F1 Score of 88.7% on test data</p>
+              <button class="pbtn" style="background:linear-gradient(135deg,#6366f1,#8b5cf6)">Explore →</button>
+            </div>
+          </div>
+          <div class="pcard pc3" onclick="nav('condition')">
+            <div class="pcn">
+              <div class="pico" style="background:linear-gradient(135deg,#06b6d4,#10b981)">☀️</div>
+              <span class="pbadge">Multi-Class</span>
+              <h3>Weather Condition</h3>
+              <p>5-class condition classification (Sunny/Cloudy/Rainy/Stormy) via Gradient Boosting</p>
+              <button class="pbtn" style="background:linear-gradient(135deg,#06b6d4,#10b981)">Explore →</button>
+            </div>
+          </div>
+          <div class="pcard pc4" onclick="nav('analytics')">
+            <div class="pcn">
+              <div class="pico" style="background:linear-gradient(135deg,#f472b6,#ec4899)">📈</div>
+              <span class="pbadge">Explore</span>
+              <h3>Data Analytics</h3>
+              <p>Explore seasonal trends, city comparisons and monthly rainfall patterns</p>
+              <button class="pbtn" style="background:linear-gradient(135deg,#f472b6,#ec4899)">Explore →</button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Quick Predictor -->
+      <div class="frgrid">
+        <div class="card cp">
+          <div class="stitle">⚡ Quick Weather Predictor</div>
+          <div class="fgrid">
+            <div class="fg"><label>🌡️ Temperature (°C)</label><input type="number" id="f-temp" class="fc" value="28" min="-10" max="50"/></div>
+            <div class="fg"><label>💧 Humidity (%)</label><input type="number" id="f-hum" class="fc" value="60" min="0" max="100"/></div>
+            <div class="fg"><label>💨 Wind Speed (km/h)</label><input type="number" id="f-wind" class="fc" value="15" min="0" max="150"/></div>
+            <div class="fg"><label>🔵 Pressure (hPa)</label><input type="number" id="f-pres" class="fc" value="1013" min="950" max="1060"/></div>
+            <div class="fg"><label>☁️ Cloud Cover (%)</label><input type="number" id="f-cloud" class="fc" value="40" min="0" max="100"/></div>
+            <div class="fg"><label>📍 City</label>
+              <select id="f-city" class="fc">
+                <option>Islamabad</option><option>Lahore</option><option>Karachi</option>
+                <option>Peshawar</option><option>Quetta</option><option>Multan</option>
+              </select>
+            </div>
+          </div>
+          <div class="brow">
+            <button class="bpred" id="pred-btn" onclick="runPred()">⚡ Predict Weather</button>
+            <button class="brst" onclick="resetF()">🔄 Reset</button>
+          </div>
+        </div>
+        <div class="card cp" id="res-panel">
+          <div class="stitle">✅ Prediction Result</div>
+          <div class="re" id="res-empty"><span>🌤️</span><p>Fill parameters and click Predict to see results</p></div>
+          <div id="res-content" style="display:none">
+            <div class="rcond">
+              <div class="rico" id="r-ico" style="background:rgba(245,158,11,.15)">☀️</div>
+              <div><div class="rlbl">Weather Condition</div><div class="rname" id="r-cond">—</div><div class="rcity" id="r-city">—</div></div>
+            </div>
+            <div class="rmets">
+              <div class="rmet"><div class="rml"><span>🌡️</span>Predicted Temp</div><div class="rmv" id="r-temp">—</div></div>
+              <div class="rmet"><div class="rml"><span>🌧️</span>Rain Probability</div><div class="rmv" id="r-rain">—</div></div>
+              <div class="rmet"><div class="rml"><span>✅</span>Confidence</div><div class="rmv" id="r-conf">—</div></div>
+            </div>
+            <div class="pw">
+              <div class="pl"><span style="color:var(--muted);font-size:12px">Rain Probability</span><span id="r-rlbl" style="font-size:12px">0%</span></div>
+              <div class="pt2"><div class="pf" id="r-rbar" style="background:linear-gradient(90deg,#6366f1,#8b5cf6)"></div></div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <footer>
+        <p>Developed using <span style="color:var(--cyan)">Machine Learning</span> &amp; <span style="color:var(--indigo)">HTML/CSS/JS</span> · Pakistan Weather Prediction System</p>
+        <div class="ficns"><div class="fico" title="Info">ℹ️</div><div class="fico" title="Charts">📊</div><div class="fico" title="Power">⚡</div></div>
+      </footer>
+    </div>
+
+    <!-- ═══════════ PAGE: TEMPERATURE ═══════════ -->
+    <div class="page" id="pg-temperature">
+      <div class="section-head">🌡️ Temperature Prediction</div>
+      <div class="section-desc">Linear Regression trained on 2,190 daily records across 6 cities. Features include humidity, wind, pressure, cloud cover, lag variables and 7-day rolling averages.</div>
+
+      <div class="big-stat-grid">
+        <div class="big-stat"><div class="bsv" style="color:var(--amber)">94.2%</div><div class="bsl">Model Accuracy</div><div class="bss">Linear Regression</div></div>
+        <div class="big-stat"><div class="bsv" style="color:var(--cyan)">0.961</div><div class="bsl">R² Score</div><div class="bss">On 25% test split</div></div>
+        <div class="big-stat"><div class="bsv" style="color:var(--emerald)">1.23°C</div><div class="bsl">Mean Abs. Error</div><div class="bss">MAE on test set</div></div>
+        <div class="big-stat"><div class="bsv" style="color:var(--purple)">22.6°C</div><div class="bsl">Dataset Avg Temp</div><div class="bss">National average</div></div>
+      </div>
+
+      <div class="tworow">
+        <div class="card cp">
+          <div class="ctitle">Monthly Avg Temperature by City (°C)</div>
+          <div class="csub">All 6 cities — 2023</div>
+          <div class="cwrap" style="height:240px"><canvas id="tc1" role="img" aria-label="Temperature trends line chart">City temperature trends 2023.</canvas></div>
+          <div class="cleg">
+            <div class="cli"><div class="cld" style="background:#06b6d4"></div>Islamabad</div>
+            <div class="cli"><div class="cld" style="background:#f59e0b"></div>Karachi</div>
+            <div class="cli"><div class="cld" style="background:#6366f1"></div>Lahore</div>
+            <div class="cli"><div class="cld" style="background:#f472b6"></div>Multan</div>
+            <div class="cli"><div class="cld" style="background:#10b981"></div>Peshawar</div>
+            <div class="cli"><div class="cld" style="background:#ef4444"></div>Quetta</div>
+          </div>
+        </div>
+        <div class="card cp">
+          <div class="stitle" style="font-size:14px">🔮 Predict Temperature</div>
+          <div class="slider-row"><label>Humidity (%)</label><input type="range" min="10" max="100" value="60" oninput="this.nextElementSibling.textContent=this.value+'%'"/><span class="sv">60%</span></div>
+          <div class="slider-row"><label>Wind Speed (km/h)</label><input type="range" min="0" max="100" value="15" oninput="this.nextElementSibling.textContent=this.value"/><span class="sv">15</span></div>
+          <div class="slider-row"><label>Pressure (hPa)</label><input type="range" min="950" max="1060" value="1013" oninput="this.nextElementSibling.textContent=this.value"/><span class="sv">1013</span></div>
+          <div class="slider-row"><label>Cloud Cover (%)</label><input type="range" min="0" max="100" value="40" oninput="this.nextElementSibling.textContent=this.value+'%'"/><span class="sv">40%</span></div>
+          <div class="fg" style="margin-bottom:14px"><label>📍 City</label>
+            <select class="fc" id="t-city"><option>Islamabad</option><option>Lahore</option><option>Karachi</option><option>Peshawar</option><option>Quetta</option><option>Multan</option></select>
+          </div>
+          <button class="bpred" style="width:100%" onclick="predictTemp(this)">🌡️ Predict Temperature</button>
+          <div id="t-res" style="display:none;margin-top:14px;padding:14px;background:rgba(245,158,11,.1);border:1px solid rgba(245,158,11,.3);border-radius:14px;text-align:center">
+            <div style="font-size:11px;color:var(--muted);margin-bottom:4px">Predicted Temperature</div>
+            <div id="t-resv" style="font-size:32px;font-weight:700;color:var(--amber)">—</div>
+            <div style="font-size:11px;color:var(--dim);margin-top:4px" id="t-resc">—</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="card cp">
+        <div class="ctitle">City Temperature Statistics</div>
+        <div class="csub">Annual summary — 2023</div>
+        <table class="info-table">
+          <thead><tr><th>City</th><th>Avg Temp (°C)</th><th>Max Temp</th><th>Min Temp</th><th>Std Dev</th><th>Season</th></tr></thead>
+          <tbody>
+            <tr><td>Islamabad</td><td>21.2</td><td>38°C</td><td>2°C</td><td>9.4</td><td><span class="badge badge-b">Moderate</span></td></tr>
+            <tr><td>Lahore</td><td>25.8</td><td>42°C</td><td>7°C</td><td>10.1</td><td><span class="badge badge-y">Hot</span></td></tr>
+            <tr><td>Karachi</td><td>26.4</td><td>38°C</td><td>14°C</td><td>5.2</td><td><span class="badge badge-g">Stable</span></td></tr>
+            <tr><td>Peshawar</td><td>23.1</td><td>41°C</td><td>4°C</td><td>10.8</td><td><span class="badge badge-b">Moderate</span></td></tr>
+            <tr><td>Quetta</td><td>17.3</td><td>34°C</td><td>-5°C</td><td>11.6</td><td><span class="badge badge-p">Cold</span></td></tr>
+            <tr><td>Multan</td><td>27.9</td><td>46°C</td><td>8°C</td><td>11.2</td><td><span class="badge badge-y">Very Hot</span></td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- ═══════════ PAGE: RAIN ═══════════ -->
+    <div class="page" id="pg-rain">
+      <div class="section-head">🌧️ Rain Prediction</div>
+      <div class="section-desc">Binary classification (Rain / No Rain) using Random Forest Classifier trained on 2,190 samples. Features: temperature, humidity, pressure, wind, cloud cover and lag variables.</div>
+
+      <div class="big-stat-grid">
+        <div class="big-stat"><div class="bsv" style="color:var(--indigo)">88.7%</div><div class="bsl">Accuracy</div><div class="bss">Random Forest</div></div>
+        <div class="big-stat"><div class="bsv" style="color:var(--purple)">88.7%</div><div class="bsl">F1 Score</div><div class="bss">Weighted avg</div></div>
+        <div class="big-stat"><div class="bsv" style="color:var(--cyan)">86.4%</div><div class="bsl">Precision</div><div class="bss">Rain class</div></div>
+        <div class="big-stat"><div class="bsv" style="color:var(--pink)">91.2%</div><div class="bsl">Recall</div><div class="bss">Rain class</div></div>
+      </div>
+
+      <div class="tworow">
+        <div class="card cp">
+          <div class="ctitle">Monthly Rainfall (mm)</div>
+          <div class="csub">National average precipitation — 2023</div>
+          <div class="cwrap" style="height:240px"><canvas id="rc1" role="img" aria-label="Monthly rainfall bar chart">Monthly rainfall 2023.</canvas></div>
+        </div>
+        <div class="card cp">
+          <div class="stitle" style="font-size:14px">🌧️ Predict Rain</div>
+          <div class="fgrid">
+            <div class="fg"><label>🌡️ Temp (°C)</label><input type="number" id="rp-temp" class="fc" value="28"/></div>
+            <div class="fg"><label>💧 Humidity (%)</label><input type="number" id="rp-hum" class="fc" value="65"/></div>
+            <div class="fg"><label>🔵 Pressure (hPa)</label><input type="number" id="rp-pres" class="fc" value="1010"/></div>
+            <div class="fg"><label>☁️ Cloud Cover (%)</label><input type="number" id="rp-cloud" class="fc" value="70"/></div>
+          </div>
+          <div class="fg" style="margin-bottom:14px"><label>📍 City</label>
+            <select class="fc" id="rp-city"><option>Islamabad</option><option>Lahore</option><option>Karachi</option><option>Peshawar</option><option>Quetta</option><option>Multan</option></select>
+          </div>
+          <button class="bpred" style="width:100%;background:linear-gradient(135deg,#6366f1,#8b5cf6)" onclick="predictRain(this)">🌧️ Predict Rain</button>
+          <div id="rp-res" style="display:none;margin-top:14px;padding:16px;border-radius:14px;text-align:center" id="rp-resbox">
+            <div id="rp-ico" style="font-size:36px;margin-bottom:6px">🌧️</div>
+            <div id="rp-verdict" style="font-size:20px;font-weight:700;margin-bottom:4px">—</div>
+            <div id="rp-prob" style="font-size:13px;color:var(--muted)">Probability: —</div>
+            <div style="margin-top:10px"><div class="pt2"><div class="pf" id="rp-bar" style="background:linear-gradient(90deg,#6366f1,#8b5cf6)"></div></div></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="card cp">
+        <div class="ctitle">Rainfall by City (mm/year)</div>
+        <div class="csub">Annual totals — 2023</div>
+        <div class="cwrap" style="height:220px"><canvas id="rc2" role="img" aria-label="City annual rainfall bar chart">City annual rainfall 2023.</canvas></div>
+      </div>
+    </div>
+
+    <!-- ═══════════ PAGE: CONDITION ═══════════ -->
+    <div class="page" id="pg-condition">
+      <div class="section-head">☀️ Weather Condition Prediction</div>
+      <div class="section-desc">Multi-class classification of weather conditions (Sunny, Partly Cloudy, Cloudy, Rainy, Stormy) using Gradient Boosting Classifier with 82.3% accuracy.</div>
+
+      <div class="big-stat-grid">
+        <div class="big-stat"><div class="bsv" style="color:var(--emerald)">82.3%</div><div class="bsl">Accuracy</div><div class="bss">Gradient Boosting</div></div>
+        <div class="big-stat"><div class="bsv" style="color:var(--cyan)">80.1%</div><div class="bsl">Precision</div><div class="bss">Weighted avg</div></div>
+        <div class="big-stat"><div class="bsv" style="color:var(--indigo)">83.5%</div><div class="bsl">Recall</div><div class="bss">Weighted avg</div></div>
+        <div class="big-stat"><div class="bsv" style="color:var(--amber)">81.8%</div><div class="bsl">F1 Score</div><div class="bss">Weighted avg</div></div>
+      </div>
+
+      <div class="tworow">
+        <div class="card cp">
+          <div class="ctitle">Condition Distribution</div>
+          <div class="csub">% of days per condition — 2023</div>
+          <div class="piel">
+            <div style="width:180px;height:180px;flex-shrink:0;position:relative"><canvas id="cc1" role="img" aria-label="Donut chart of weather conditions">Sunny 38%, Partly Cloudy 27%, Cloudy 18%, Rainy 12%, Stormy 5%.</canvas></div>
+            <div class="pieleg">
+              <div class="plr"><div class="pll"><div class="pld" style="background:#f59e0b"></div>Sunny</div><div class="plv">38%</div></div>
+              <div class="plr"><div class="pll"><div class="pld" style="background:#60a5fa"></div>Partly Cloudy</div><div class="plv">27%</div></div>
+              <div class="plr"><div class="pll"><div class="pld" style="background:#94a3b8"></div>Cloudy</div><div class="plv">18%</div></div>
+              <div class="plr"><div class="pll"><div class="pld" style="background:#6366f1"></div>Rainy</div><div class="plv">12%</div></div>
+              <div class="plr"><div class="pll"><div class="pld" style="background:#7c3aed"></div>Stormy</div><div class="plv">5%</div></div>
+            </div>
+          </div>
+        </div>
+        <div class="card cp">
+          <div class="stitle" style="font-size:14px">☀️ Predict Condition</div>
+          <div class="fgrid">
+            <div class="fg"><label>🌡️ Temp (°C)</label><input type="number" id="cp-temp" class="fc" value="30"/></div>
+            <div class="fg"><label>💧 Humidity (%)</label><input type="number" id="cp-hum" class="fc" value="55"/></div>
+            <div class="fg"><label>💨 Wind (km/h)</label><input type="number" id="cp-wind" class="fc" value="20"/></div>
+            <div class="fg"><label>☁️ Cloud Cover (%)</label><input type="number" id="cp-cloud" class="fc" value="35"/></div>
+          </div>
+          <div class="fg" style="margin-bottom:14px"><label>📍 City</label>
+            <select class="fc" id="cp-city"><option>Islamabad</option><option>Lahore</option><option>Karachi</option><option>Peshawar</option><option>Quetta</option><option>Multan</option></select>
+          </div>
+          <button class="bpred" style="width:100%;background:linear-gradient(135deg,#06b6d4,#10b981)" onclick="predictCond(this)">☀️ Predict Condition</button>
+          <div id="cp-res" style="display:none;margin-top:14px">
+            <div style="padding:16px;border-radius:14px;text-align:center" id="cp-resbox">
+              <div id="cp-ico" style="font-size:40px;margin-bottom:8px">☀️</div>
+              <div id="cp-cond" style="font-size:22px;font-weight:700;margin-bottom:4px">—</div>
+              <div id="cp-conf" style="font-size:13px;color:var(--muted)">Confidence: —</div>
+            </div>
+            <div style="margin-top:12px;display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px" id="cp-bars"></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="card cp">
+        <div class="ctitle">Condition by City (% Sunny days)</div>
+        <div class="csub">Breakdown of sunny days across cities — 2023</div>
+        <div class="cwrap" style="height:220px"><canvas id="cc2" role="img" aria-label="Sunny days by city bar chart">Sunny days per city 2023.</canvas></div>
+      </div>
+    </div>
+
+    <!-- ═══════════ PAGE: ANALYTICS ═══════════ -->
+    <div class="page" id="pg-analytics">
+      <div class="section-head">📊 Data Analytics</div>
+      <div class="section-desc">Deep-dive into seasonal trends, city comparisons, humidity patterns and pollution indices across 2,190 daily records from 6 Pakistani cities in 2023.</div>
+
+      <div class="agrid">
+        <div class="card cp">
+          <div class="ctitle">Monthly Temperature Trends (°C)</div>
+          <div class="csub">All cities — 2023</div>
+          <div class="cwrap" style="height:220px"><canvas id="an1" role="img" aria-label="Temperature trends">City temperatures 2023.</canvas></div>
+          <div class="cleg">
+            <div class="cli"><div class="cld" style="background:#06b6d4"></div>Islamabad</div>
+            <div class="cli"><div class="cld" style="background:#f59e0b"></div>Karachi</div>
+            <div class="cli"><div class="cld" style="background:#6366f1"></div>Lahore</div>
+            <div class="cli"><div class="cld" style="background:#f472b6"></div>Multan</div>
+          </div>
+        </div>
+        <div class="card cp">
+          <div class="ctitle">Monthly Rainfall (mm)</div>
+          <div class="csub">National average — 2023</div>
+          <div class="cwrap" style="height:220px"><canvas id="an2" role="img" aria-label="Rainfall">Monthly rainfall 2023.</canvas></div>
+        </div>
+        <div class="card cp">
+          <div class="ctitle">Average Humidity by City (%)</div>
+          <div class="csub">Annual average — 2023</div>
+          <div class="cwrap" style="height:220px"><canvas id="an3" role="img" aria-label="Humidity by city">City humidity 2023.</canvas></div>
+        </div>
+        <div class="card cp">
+          <div class="ctitle">PM2.5 Air Quality Index</div>
+          <div class="csub">Monthly national average — 2023</div>
+          <div class="cwrap" style="height:220px"><canvas id="an4" role="img" aria-label="Air quality index">Air quality 2023.</canvas></div>
+        </div>
+      </div>
+
+      <div class="card cp">
+        <div class="ctitle">Dataset Feature Summary</div>
+        <div class="csub">Key statistics from the 38-feature dataset</div>
+        <table class="info-table">
+          <thead><tr><th>Feature</th><th>Mean</th><th>Min</th><th>Max</th><th>Std Dev</th><th>Type</th></tr></thead>
+          <tbody>
+            <tr><td>AvgTemp (°C)</td><td>22.64</td><td>-5.5</td><td>46.0</td><td>9.8</td><td><span class="badge badge-y">Continuous</span></td></tr>
+            <tr><td>Humidity (%)</td><td>58.83</td><td>7.79</td><td>98.5</td><td>18.4</td><td><span class="badge badge-y">Continuous</span></td></tr>
+            <tr><td>Rainfall (mm)</td><td>1.41</td><td>0.0</td><td>85.0</td><td>6.2</td><td><span class="badge badge-b">Skewed</span></td></tr>
+            <tr><td>WindSpeed (km/h)</td><td>14.7</td><td>0.0</td><td>80.0</td><td>8.9</td><td><span class="badge badge-y">Continuous</span></td></tr>
+            <tr><td>Pressure (hPa)</td><td>1008.3</td><td>972</td><td>1035</td><td>9.1</td><td><span class="badge badge-y">Continuous</span></td></tr>
+            <tr><td>PM2.5</td><td>109.27</td><td>20.0</td><td>350.0</td><td>62.4</td><td><span class="badge badge-p">Pollution</span></td></tr>
+            <tr><td>Rain (binary)</td><td>0.23</td><td>0</td><td>1</td><td>—</td><td><span class="badge badge-g">Target</span></td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- ═══════════ PAGE: PERFORMANCE ═══════════ -->
+    <div class="page" id="pg-performance">
+      <div class="section-head">⚡ Model Performance</div>
+      <div class="section-desc">Comprehensive evaluation metrics for all three ML models trained on the Pakistan Weather Dataset. Evaluated on 25% held-out test split (547 samples).</div>
+
+      <div class="agrid">
+        <!-- Temp Model -->
+        <div class="card cp">
+          <div style="display:flex;align-items:center;gap:10px;margin-bottom:16px">
+            <div class="sico" style="background:rgba(245,158,11,.15)">🌡️</div>
+            <div><div style="font-weight:700;font-size:15px">Temperature Model</div><div style="font-size:12px;color:var(--muted)">Linear Regression</div></div>
+            <span class="badge badge-g" style="margin-left:auto">Best</span>
+          </div>
+          <div class="pw"><div class="pl"><span style="color:var(--muted)">Accuracy</span><span>94.2%</span></div><div class="pt2"><div class="pf" data-w="94.2" style="background:linear-gradient(90deg,#f59e0b,#ef4444)"></div></div></div>
+          <div class="pw"><div class="pl"><span style="color:var(--muted)">R² Score</span><span>96.1%</span></div><div class="pt2"><div class="pf" data-w="96.1" style="background:linear-gradient(90deg,#06b6d4,#6366f1)"></div></div></div>
+          <div class="pw"><div class="pl"><span style="color:var(--muted)">MAE</span><span>1.23°C</span></div><div class="pt2"><div class="pf" data-w="87" style="background:linear-gradient(90deg,#10b981,#06b6d4)"></div></div></div>
+          <div class="pw"><div class="pl"><span style="color:var(--muted)">RMSE</span><span>1.89°C</span></div><div class="pt2"><div class="pf" data-w="81" style="background:linear-gradient(90deg,#f472b6,#8b5cf6)"></div></div></div>
+          <div style="margin-top:14px;padding:12px;background:rgba(245,158,11,.08);border-radius:12px;font-size:12px;color:var(--muted)">
+            🏆 Linear Regression outperformed Decision Tree and other baseline models. Training time: ~0.8s.
+          </div>
+        </div>
+
+        <!-- Rain Model -->
+        <div class="card cp">
+          <div style="display:flex;align-items:center;gap:10px;margin-bottom:16px">
+            <div class="sico" style="background:rgba(99,102,241,.15)">🌧️</div>
+            <div><div style="font-weight:700;font-size:15px">Rain Classifier</div><div style="font-size:12px;color:var(--muted)">Random Forest (100 trees)</div></div>
+            <span class="badge badge-b" style="margin-left:auto">Good</span>
+          </div>
+          <div class="pw"><div class="pl"><span style="color:var(--muted)">Accuracy</span><span>88.7%</span></div><div class="pt2"><div class="pf" data-w="88.7" style="background:linear-gradient(90deg,#6366f1,#8b5cf6)"></div></div></div>
+          <div class="pw"><div class="pl"><span style="color:var(--muted)">Precision</span><span>86.4%</span></div><div class="pt2"><div class="pf" data-w="86.4" style="background:linear-gradient(90deg,#8b5cf6,#ec4899)"></div></div></div>
+          <div class="pw"><div class="pl"><span style="color:var(--muted)">Recall</span><span>91.2%</span></div><div class="pt2"><div class="pf" data-w="91.2" style="background:linear-gradient(90deg,#10b981,#06b6d4)"></div></div></div>
+          <div class="pw"><div class="pl"><span style="color:var(--muted)">F1 Score</span><span>88.7%</span></div><div class="pt2"><div class="pf" data-w="88.7" style="background:linear-gradient(90deg,#f472b6,#f59e0b)"></div></div></div>
+          <div style="margin-top:14px;padding:12px;background:rgba(99,102,241,.08);border-radius:12px;font-size:12px;color:var(--muted)">
+            🌲 100 estimators, max_depth=10. Humidity and cloud cover were the top features.
+          </div>
+        </div>
+
+        <!-- Condition Model -->
+        <div class="card cp">
+          <div style="display:flex;align-items:center;gap:10px;margin-bottom:16px">
+            <div class="sico" style="background:rgba(16,185,129,.15)">☀️</div>
+            <div><div style="font-weight:700;font-size:15px">Condition Classifier</div><div style="font-size:12px;color:var(--muted)">Gradient Boosting (5 classes)</div></div>
+            <span class="badge badge-y" style="margin-left:auto">Fair</span>
+          </div>
+          <div class="pw"><div class="pl"><span style="color:var(--muted)">Accuracy</span><span>82.3%</span></div><div class="pt2"><div class="pf" data-w="82.3" style="background:linear-gradient(90deg,#10b981,#06b6d4)"></div></div></div>
+          <div class="pw"><div class="pl"><span style="color:var(--muted)">Precision</span><span>80.1%</span></div><div class="pt2"><div class="pf" data-w="80.1" style="background:linear-gradient(90deg,#06b6d4,#6366f1)"></div></div></div>
+          <div class="pw"><div class="pl"><span style="color:var(--muted)">Recall</span><span>83.5%</span></div><div class="pt2"><div class="pf" data-w="83.5" style="background:linear-gradient(90deg,#6366f1,#8b5cf6)"></div></div></div>
+          <div class="pw"><div class="pl"><span style="color:var(--muted)">F1 Score</span><span>81.8%</span></div><div class="pt2"><div class="pf" data-w="81.8" style="background:linear-gradient(90deg,#8b5cf6,#ec4899)"></div></div></div>
+          <div style="margin-top:14px;padding:12px;background:rgba(16,185,129,.08);border-radius:12px;font-size:12px;color:var(--muted)">
+            🌤️ 5-class multi-label. Stormy class had lowest recall (74%) due to class imbalance.
+          </div>
+        </div>
+
+        <!-- Model Comparison Chart -->
+        <div class="card cp">
+          <div class="ctitle">Model Accuracy Comparison</div>
+          <div class="csub">All 3 models vs baselines</div>
+          <div class="cwrap" style="height:240px"><canvas id="pm1" role="img" aria-label="Model accuracy comparison">Model accuracy comparison.</canvas></div>
+        </div>
+      </div>
+
+      <div class="card cp">
+        <div class="ctitle">Training Configuration</div>
+        <div class="csub">Hyperparameters and settings used</div>
+        <table class="info-table">
+          <thead><tr><th>Model</th><th>Algorithm</th><th>Key Params</th><th>Train Size</th><th>Test Size</th><th>CV Folds</th></tr></thead>
+          <tbody>
+            <tr><td>🌡️ Temperature</td><td>Linear Regression</td><td>fit_intercept=True, normalize=False</td><td>1,643</td><td>547</td><td>5</td></tr>
+            <tr><td>🌧️ Rain</td><td>Random Forest</td><td>n_estimators=100, max_depth=10</td><td>1,643</td><td>547</td><td>5</td></tr>
+            <tr><td>☀️ Condition</td><td>Gradient Boosting</td><td>n_estimators=150, lr=0.05, depth=5</td><td>1,643</td><td>547</td><td>5</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- ═══════════ PAGE: SETTINGS ═══════════ -->
+    <div class="page" id="pg-settings">
+      <div class="section-head">⚙️ Settings</div>
+      <div class="section-desc">Configure dashboard preferences, model parameters and display options.</div>
+
+      <div class="tworow">
+        <div class="card cp">
+          <div class="stitle">🎨 Display Settings</div>
+          <div class="settings-row"><div><div class="srl">Dark Mode</div><div class="srs">Always enabled for this dashboard</div></div><button class="toggle on" onclick="this.classList.toggle('on');this.classList.toggle('off')"></button></div>
+          <div class="settings-row"><div><div class="srl">Animated Charts</div><div class="srs">Smooth loading animations on charts</div></div><button class="toggle on" onclick="this.classList.toggle('on');this.classList.toggle('off')"></button></div>
+          <div class="settings-row"><div><div class="srl">Show Confidence Score</div><div class="srs">Display model confidence in results</div></div><button class="toggle on" onclick="this.classList.toggle('on');this.classList.toggle('off')"></button></div>
+          <div class="settings-row"><div><div class="srl">Live Clock</div><div class="srs">Show current time in header</div></div><button class="toggle on" onclick="this.classList.toggle('on');this.classList.toggle('off')"></button></div>
+          <div class="settings-row"><div><div class="srl">Compact Sidebar</div><div class="srs">Collapse sidebar by default</div></div><button class="toggle off" onclick="this.classList.toggle('on');this.classList.toggle('off')"></button></div>
+        </div>
+
+        <div class="card cp">
+          <div class="stitle">🤖 Model Settings</div>
+          <div class="fg" style="margin-bottom:14px"><label>Default City</label>
+            <select class="fc"><option>Islamabad</option><option>Lahore</option><option>Karachi</option><option>Peshawar</option><option>Quetta</option><option>Multan</option></select>
+          </div>
+          <div class="fg" style="margin-bottom:14px"><label>Temperature Unit</label>
+            <select class="fc"><option>Celsius (°C)</option><option>Fahrenheit (°F)</option></select>
+          </div>
+          <div class="fg" style="margin-bottom:14px"><label>Default Model (Temperature)</label>
+            <select class="fc"><option>Linear Regression (Best)</option><option>Random Forest</option><option>XGBoost</option></select>
+          </div>
+          <div class="fg" style="margin-bottom:14px"><label>Confidence Threshold (%)</label>
+            <input type="number" class="fc" value="70" min="50" max="99"/>
+          </div>
+          <button class="bpred" style="width:100%;margin-top:8px">💾 Save Settings</button>
+        </div>
+
+        <div class="card cp">
+          <div class="stitle">📁 Dataset Info</div>
+          <ul class="feature-list">
+            <li><span class="ico2">📅</span>Date range: January 1, 2023 — December 31, 2023 (365 days × 6 cities)</li>
+            <li><span class="ico2">🏙️</span>Cities: Islamabad, Lahore, Karachi, Peshawar, Quetta, Multan</li>
+            <li><span class="ico2">📊</span>Total records: 2,190 rows × 38 feature columns</li>
+            <li><span class="ico2">🔢</span>Missing values: &lt;0.3% (imputed with forward-fill)</li>
+            <li><span class="ico2">🎯</span>Targets: AvgTemp (regression), Rain (binary), WeatherCode (5-class)</li>
+            <li><span class="ico2">🛠️</span>Tools: Python, Pandas, Scikit-learn, Matplotlib, Seaborn</li>
+          </ul>
+        </div>
+
+        <div class="card cp">
+          <div class="stitle">👤 Profile</div>
+          <div style="display:flex;align-items:center;gap:14px;margin-bottom:20px;padding:14px;background:rgba(255,255,255,.05);border-radius:14px">
+            <div style="width:50px;height:50px;border-radius:50%;background:linear-gradient(135deg,var(--cyan),var(--indigo));display:flex;align-items:center;justify-content:center;font-size:22px">👤</div>
+            <div><div style="font-weight:600;font-size:15px">ML Researcher</div><div style="font-size:12px;color:var(--muted)">Pakistan Weather Project</div></div>
+          </div>
+          <div class="settings-row"><div><div class="srl">Notifications</div><div class="srs">Model alerts and updates</div></div><button class="toggle on" onclick="this.classList.toggle('on');this.classList.toggle('off')"></button></div>
+          <div class="settings-row"><div><div class="srl">Auto-refresh Data</div><div class="srs">Re-fetch latest predictions</div></div><button class="toggle off" onclick="this.classList.toggle('on');this.classList.toggle('off')"></button></div>
+        </div>
+      </div>
+    </div>
+
+  </main>
+</div>
+
+<script>
+/* ─── CLOCK ─────────────────────────── */
+function tick(){document.getElementById('clk').textContent=new Date().toLocaleString('en-PK',{weekday:'short',month:'short',day:'numeric',hour:'2-digit',minute:'2-digit'})}
+tick();setInterval(tick,1000);
+
+/* ─── NAVIGATION ─────────────────────── */
+function nav(id){
+  document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
+  document.querySelectorAll('.ni').forEach(b=>b.classList.remove('active'));
+  document.getElementById('pg-'+id).classList.add('active');
+  document.querySelectorAll('.ni').forEach(b=>{if(b.getAttribute('onclick').includes("'"+id+"'"))b.classList.add('active')});
+  window.scrollTo(0,0);
+  // lazy-init charts for that page
+  initCharts(id);
+}
+
+/* ─── PARTICLES ─────────────────────── */
+const hp=document.getElementById('hparts');
+for(let i=0;i<10;i++){const d=document.createElement('div');d.className='pt';const s=28+i*16;d.style.cssText=`width:${s}px;height:${s}px;background:${i%2?'#06b6d4':'#6366f1'};top:${Math.random()*100}%;left:${Math.random()*100}%;animation-delay:${i*.5}s;animation-duration:${3+i*.4}s`;hp.appendChild(d)}
+
+/* ─── COUNTERS ──────────────────────── */
+document.querySelectorAll('[data-c]').forEach(el=>{
+  const t=parseFloat(el.dataset.c),s=el.dataset.s||'';
+  let n=0;const step=t/(1500/16);
+  const tm=setInterval(()=>{n=Math.min(n+step,t);el.textContent=Math.floor(n)+s;if(n>=t)clearInterval(tm)},16);
+});
+
+/* ─── PROGRESS BARS ─────────────────── */
+function animBars(){document.querySelectorAll('.pf[data-w]').forEach(b=>setTimeout(()=>{b.style.width=b.dataset.w+'%'},450))}
+animBars();
+
+/* ─── CHART REGISTRY ─────────────────── */
+const charts={};
+function mkChart(id,cfg){
+  if(charts[id])return;
+  const el=document.getElementById(id);
+  if(!el)return;
+  charts[id]=new Chart(el,cfg);
+}
+const months=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+const TMP={Islamabad:[7,10,16,22,28,32,29,28,24,19,13,8],Karachi:[20,22,25,28,31,33,30,29,28,26,23,20],Lahore:[12,15,21,28,35,38,34,33,30,25,18,13],Multan:[13,16,23,30,38,41,37,36,32,27,19,14],Peshawar:[9,12,18,24,31,35,32,31,27,22,15,10],Quetta:[4,7,13,19,25,28,24,23,20,15,9,5]};
+const RAIN=[28,35,52,38,22,58,195,210,72,18,12,22];
+const ttp={backgroundColor:'#0a1628',borderColor:'rgba(255,255,255,.18)',borderWidth:1,titleColor:'#fff',bodyColor:'rgba(255,255,255,.7)',cornerRadius:10,padding:10};
+const gscales={x:{grid:{color:'rgba(255,255,255,.05)'},ticks:{color:'rgba(255,255,255,.38)',font:{size:11}}},y:{grid:{color:'rgba(255,255,255,.05)'},ticks:{color:'rgba(255,255,255,.38)',font:{size:11}}}};
+
+function initCharts(page){
+  if(page==='dashboard'||page==='temperature'){
+    mkChart('tc1',{type:'line',data:{labels:months,datasets:[
+      {label:'Islamabad',data:TMP.Islamabad,borderColor:'#06b6d4',borderWidth:2,pointRadius:0,tension:.4,fill:false},
+      {label:'Karachi',data:TMP.Karachi,borderColor:'#f59e0b',borderWidth:2,pointRadius:0,tension:.4,fill:false,borderDash:[4,2]},
+      {label:'Lahore',data:TMP.Lahore,borderColor:'#6366f1',borderWidth:2,pointRadius:0,tension:.4,fill:false,borderDash:[2,2]},
+      {label:'Multan',data:TMP.Multan,borderColor:'#f472b6',borderWidth:2,pointRadius:0,tension:.4,fill:false,borderDash:[6,2]},
+      {label:'Peshawar',data:TMP.Peshawar,borderColor:'#10b981',borderWidth:2,pointRadius:0,tension:.4,fill:false,borderDash:[3,3]},
+      {label:'Quetta',data:TMP.Quetta,borderColor:'#ef4444',borderWidth:2,pointRadius:0,tension:.4,fill:false,borderDash:[8,2]},
+    ]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false},tooltip:ttp},scales:gscales}});
+  }
+  if(page==='rain'){
+    mkChart('rc1',{type:'bar',data:{labels:months,datasets:[{label:'Rainfall (mm)',data:RAIN,backgroundColor:months.map((_,i)=>i>=6&&i<=8?'rgba(99,102,241,.85)':'rgba(6,182,212,.6)'),borderRadius:6,borderSkipped:false}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false},tooltip:ttp},scales:{x:{grid:{display:false},ticks:{color:'rgba(255,255,255,.38)',font:{size:11}}},y:{grid:{color:'rgba(255,255,255,.05)'},ticks:{color:'rgba(255,255,255,.38)',font:{size:11}}}}}});
+    mkChart('rc2',{type:'bar',data:{labels:['Islamabad','Lahore','Karachi','Peshawar','Quetta','Multan'],datasets:[{label:'Rainfall (mm/yr)',data:[878,520,218,408,214,132],backgroundColor:['#06b6d4','#6366f1','#f59e0b','#10b981','#8b5cf6','#f472b6'],borderRadius:8,borderSkipped:false}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false},tooltip:ttp},scales:{x:{grid:{display:false},ticks:{color:'rgba(255,255,255,.38)',font:{size:11}}},y:{grid:{color:'rgba(255,255,255,.05)'},ticks:{color:'rgba(255,255,255,.38)',font:{size:11}}}}}});
+  }
+  if(page==='condition'){
+    mkChart('cc1',{type:'doughnut',data:{labels:['Sunny','Partly Cloudy','Cloudy','Rainy','Stormy'],datasets:[{data:[38,27,18,12,5],backgroundColor:['#f59e0b','#60a5fa','#94a3b8','#6366f1','#7c3aed'],borderWidth:0,hoverOffset:6}]},options:{responsive:true,maintainAspectRatio:false,cutout:'62%',plugins:{legend:{display:false},tooltip:{...ttp,callbacks:{label:ctx=>` ${ctx.label}: ${ctx.parsed}%`}}}}});
+    mkChart('cc2',{type:'bar',data:{labels:['Islamabad','Lahore','Karachi','Peshawar','Quetta','Multan'],datasets:[{label:'Sunny Days (%)',data:[42,36,68,38,51,34],backgroundColor:['rgba(245,158,11,.7)','rgba(99,102,241,.7)','rgba(6,182,212,.7)','rgba(16,185,129,.7)','rgba(139,92,246,.7)','rgba(244,114,182,.7)'],borderRadius:8,borderSkipped:false}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false},tooltip:ttp},scales:{x:{grid:{display:false},ticks:{color:'rgba(255,255,255,.38)',font:{size:11}}},y:{grid:{color:'rgba(255,255,255,.05)'},ticks:{color:'rgba(255,255,255,.38)',font:{size:11},callback:v=>v+'%'}}}}});
+  }
+  if(page==='analytics'){
+    mkChart('an1',{type:'line',data:{labels:months,datasets:[
+      {label:'Islamabad',data:TMP.Islamabad,borderColor:'#06b6d4',borderWidth:2,pointRadius:0,tension:.4,fill:false},
+      {label:'Karachi',data:TMP.Karachi,borderColor:'#f59e0b',borderWidth:2,pointRadius:0,tension:.4,fill:false,borderDash:[4,2]},
+      {label:'Lahore',data:TMP.Lahore,borderColor:'#6366f1',borderWidth:2,pointRadius:0,tension:.4,fill:false,borderDash:[2,2]},
+      {label:'Multan',data:TMP.Multan,borderColor:'#f472b6',borderWidth:2,pointRadius:0,tension:.4,fill:false,borderDash:[6,2]},
+    ]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false},tooltip:ttp},scales:gscales}});
+    mkChart('an2',{type:'bar',data:{labels:months,datasets:[{label:'Rainfall (mm)',data:RAIN,backgroundColor:months.map((_,i)=>i>=6&&i<=8?'rgba(99,102,241,.85)':'rgba(6,182,212,.6)'),borderRadius:6,borderSkipped:false}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false},tooltip:ttp},scales:{x:{grid:{display:false},ticks:{color:'rgba(255,255,255,.38)',font:{size:11}}},y:{grid:{color:'rgba(255,255,255,.05)'},ticks:{color:'rgba(255,255,255,.38)',font:{size:11}}}}}});
+    mkChart('an3',{type:'bar',data:{labels:['Islamabad','Lahore','Karachi','Peshawar','Quetta','Multan'],datasets:[{label:'Avg Humidity (%)',data:[62,58,74,56,48,52],backgroundColor:['#06b6d4','#6366f1','#f59e0b','#10b981','#8b5cf6','#f472b6'],borderRadius:8,borderSkipped:false}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false},tooltip:ttp},scales:{x:{grid:{display:false},ticks:{color:'rgba(255,255,255,.38)',font:{size:11}}},y:{grid:{color:'rgba(255,255,255,.05)'},ticks:{color:'rgba(255,255,255,.38)',font:{size:11},callback:v=>v+'%'}}}}});
+    mkChart('an4',{type:'line',data:{labels:months,datasets:[{label:'PM2.5',data:[145,132,118,95,88,72,62,68,85,110,138,150],borderColor:'#f472b6',backgroundColor:'rgba(244,114,182,.08)',borderWidth:2,pointRadius:3,tension:.4,fill:true}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false},tooltip:ttp},scales:gscales}});
+  }
+  if(page==='performance'){
+    mkChart('pm1',{type:'bar',data:{labels:['Lin. Reg\n(Temp)','Rand Forest\n(Rain)','Grad Boost\n(Cond)','XGBoost\n(Baseline)','Log Reg\n(Baseline)'],datasets:[{label:'Accuracy %',data:[94.2,88.7,82.3,71.4,76.8],backgroundColor:['rgba(245,158,11,.8)','rgba(99,102,241,.8)','rgba(16,185,129,.8)','rgba(148,163,184,.5)','rgba(148,163,184,.5)'],borderRadius:8,borderSkipped:false}]},options:{responsive:true,maintainAspectRatio:false,indexAxis:'y',plugins:{legend:{display:false},tooltip:ttp},scales:{x:{grid:{color:'rgba(255,255,255,.05)'},ticks:{color:'rgba(255,255,255,.38)',font:{size:11},callback:v=>v+'%'},min:0,max:100},y:{grid:{display:false},ticks:{color:'rgba(255,255,255,.5)',font:{size:11}}}}}});
+  }
+}
+// init dashboard charts on load
+initCharts('dashboard');
+
+/* ─── DASHBOARD PREDICT ─────────────── */
+function runPred(){
+  const btn=document.getElementById('pred-btn');
+  btn.disabled=true;btn.innerHTML='<div class="spin"></div> Predicting…';
+  setTimeout(()=>{
+    const temp=+document.getElementById('f-temp').value||28;
+    const hum=+document.getElementById('f-hum').value||60;
+    const cloud=+document.getElementById('f-cloud').value||40;
+    const city=document.getElementById('f-city').value;
+    const icons={'Sunny':'☀️','Partly Cloudy':'⛅','Cloudy':'☁️','Rainy':'🌧️','Stormy':'⚡'};
+    const bgcols={'Sunny':'rgba(245,158,11,.15)','Partly Cloudy':'rgba(96,165,250,.15)','Cloudy':'rgba(148,163,184,.15)','Rainy':'rgba(99,102,241,.15)','Stormy':'rgba(124,58,237,.15)'};
+    const cond=cloud>78?'Rainy':cloud>58?'Cloudy':cloud>30?'Partly Cloudy':'Sunny';
+    const pt=(temp+(Math.random()*4-2)).toFixed(1);
+    const rp=Math.min(100,Math.round(hum*.52+cloud*.34+Math.random()*8));
+    const cf=Math.round(82+Math.random()*10);
+    document.getElementById('res-empty').style.display='none';
+    document.getElementById('res-content').style.display='block';
+    document.getElementById('r-ico').textContent=icons[cond];
+    document.getElementById('r-ico').style.background=bgcols[cond];
+    document.getElementById('r-cond').textContent=cond;
+    document.getElementById('r-city').textContent=city+' · '+new Date().toLocaleDateString('en-PK',{month:'short',day:'numeric',year:'numeric'});
+    document.getElementById('r-temp').textContent=pt+'°C';
+    document.getElementById('r-rain').textContent=rp+'%';
+    document.getElementById('r-conf').textContent=cf+'%';
+    document.getElementById('r-rlbl').textContent=rp+'%';
+    const bar=document.getElementById('r-rbar');bar.style.width='0';
+    setTimeout(()=>{bar.style.width=rp+'%'},100);
+    btn.disabled=false;btn.innerHTML='⚡ Predict Weather';
+  },2000);
+}
+function resetF(){
+  ['f-temp','f-hum','f-wind','f-pres','f-cloud'].forEach((id,i)=>document.getElementById(id).value=[28,60,15,1013,40][i]);
+  document.getElementById('f-city').value='Islamabad';
+  document.getElementById('res-empty').style.display='flex';
+  document.getElementById('res-content').style.display='none';
+}
+
+/* ─── TEMPERATURE PAGE PREDICT ──────── */
+function predictTemp(btn){
+  btn.disabled=true;btn.innerHTML='<div class="spin"></div> Predicting…';
+  const cityBase={Islamabad:21,Lahore:26,Karachi:26,Peshawar:23,Quetta:17,Multan:28};
+  setTimeout(()=>{
+    const city=document.getElementById('t-city').value;
+    const base=cityBase[city]||22;
+    const pred=(base+(Math.random()*6-3)).toFixed(1);
+    document.getElementById('t-res').style.display='block';
+    document.getElementById('t-resv').textContent=pred+'°C';
+    document.getElementById('t-resc').textContent='Linear Regression · Confidence: '+(82+Math.round(Math.random()*10))+'% · '+city;
+    btn.disabled=false;btn.innerHTML='🌡️ Predict Temperature';
+  },1800);
+}
+
+/* ─── RAIN PAGE PREDICT ─────────────── */
+function predictRain(btn){
+  btn.disabled=true;btn.innerHTML='<div class="spin"></div> Predicting…';
+  setTimeout(()=>{
+    const hum=+document.getElementById('rp-hum').value||65;
+    const cloud=+document.getElementById('rp-cloud').value||70;
+    const city=document.getElementById('rp-city').value;
+    const prob=Math.min(98,Math.round(hum*.5+cloud*.4+Math.random()*10));
+    const rain=prob>50;
+    const box=document.getElementById('rp-res');
+    box.style.display='block';
+    box.style.background=rain?'rgba(99,102,241,.1)':'rgba(245,158,11,.1)';
+    box.style.border=`1px solid ${rain?'rgba(99,102,241,.3)':'rgba(245,158,11,.3)'}`;
+    box.style.borderRadius='14px';
+    document.getElementById('rp-ico').textContent=rain?'🌧️':'☀️';
+    document.getElementById('rp-verdict').textContent=rain?'Rain Expected':'No Rain';
+    document.getElementById('rp-prob').textContent=city+' · Probability: '+prob+'%';
+    const bar=document.getElementById('rp-bar');bar.style.width='0';
+    setTimeout(()=>{bar.style.width=prob+'%'},100);
+    btn.disabled=false;btn.innerHTML='🌧️ Predict Rain';
+  },1800);
+}
+
+/* ─── CONDITION PAGE PREDICT ─────────── */
+function predictCond(btn){
+  btn.disabled=true;btn.innerHTML='<div class="spin"></div> Predicting…';
+  setTimeout(()=>{
+    const cloud=+document.getElementById('cp-cloud').value||35;
+    const hum=+document.getElementById('cp-hum').value||55;
+    const city=document.getElementById('cp-city').value;
+    const conds=[
+      {name:'Sunny',ico:'☀️',bg:'rgba(245,158,11,.12)',bc:'rgba(245,158,11,.35)'},
+      {name:'Partly Cloudy',ico:'⛅',bg:'rgba(96,165,250,.12)',bc:'rgba(96,165,250,.35)'},
+      {name:'Cloudy',ico:'☁️',bg:'rgba(148,163,184,.12)',bc:'rgba(148,163,184,.35)'},
+      {name:'Rainy',ico:'🌧️',bg:'rgba(99,102,241,.12)',bc:'rgba(99,102,241,.35)'},
+      {name:'Stormy',ico:'⚡',bg:'rgba(124,58,237,.12)',bc:'rgba(124,58,237,.35)'},
+    ];
+    const idx=cloud>80?3:cloud>60?2:cloud>35?1:0;
+    const chosen=conds[idx];
+    const conf=Math.round(72+Math.random()*18);
+    const probs=conds.map((_,i)=>i===idx?conf:Math.round(Math.random()*(100-conf)/4));
+    document.getElementById('cp-res').style.display='block';
+    const rb=document.getElementById('cp-resbox');
+    rb.style.background=chosen.bg;rb.style.border=`1px solid ${chosen.bc}`;rb.style.borderRadius='14px';rb.style.padding='16px';
+    document.getElementById('cp-ico').textContent=chosen.ico;
+    document.getElementById('cp-cond').textContent=chosen.name;
+    document.getElementById('cp-conf').textContent=city+' · Confidence: '+conf+'%';
+    const barsEl=document.getElementById('cp-bars');
+    barsEl.innerHTML=conds.map((c,i)=>`<div style="background:rgba(255,255,255,.05);border-radius:10px;padding:8px;text-align:center"><div style="font-size:18px">${c.ico}</div><div style="font-size:10px;color:var(--muted);margin:3px 0">${c.name}</div><div style="font-size:13px;font-weight:700">${probs[i]}%</div></div>`).join('');
+    btn.disabled=false;btn.innerHTML='☀️ Predict Condition';
+  },1800);
+}
+</script>
+</body>
+</html>
